@@ -74,6 +74,275 @@ makePromise('a/b/c')
 
 ```
 
+### 递归删除目录
+
+```js
+function rmSync(dir){
+   try {
+       //拿到文件对象
+       let file = fs.statSync(dir)
+       if(file.isFile()){
+           file.unlinkSync(dir)
+       }else {
+           //是文件夹就要查找子文件夹,空文件夹就直接删除
+           fs.readdirSync(dir).map(item => path.join(dir,item))
+           .forEach(path => rmSync(path))
+           //删除完文件后删目录
+           fs.rmdirSync(dir)
+       }
+   }catch(e){
+       console.log('删除失败')
+   }
+}
+rmSync(path.join(__dirname,'a'))
+
+
+function rmPromise(dir){
+    //因为返回的是一个promise对象
+    return new Promise((resolve,reject) => {
+        //通过回调拿到文件对象
+        fs.stat(dir,(err,stat) => {
+            //出错了就报错
+            if(err)return reject(err)
+            //是目录就继续往下找
+            if(stat.isDirectory()){
+                //读目录
+                fs.readdir(dir,(err,files) => {
+                    //找路径
+                    let paths = files.map(file => path.join(dir,file))
+                    //递归查找路径
+                    let promises = paths.map(p => rmPromise(p))
+                    //所以等所有的promises都完成后执行删除目录操作
+                    Promise.all(promises).then(() => fs.rmdir(dir,resolve))
+                })
+            } else {
+                //是文件就删除
+                fs.unlink(dir,resolve)
+            }
+        })
+    })
+}
+rmPromise(path.join(__dirname,'a')).then(() => {
+    console.log('删除成功')
+})
+
+
+//异步串行删除目录(深度优先)
+function rmAsyncSeries(dir,callback) {
+  fs.stat(dir,(err,stat) => {
+      if(err)return callback(err)
+      if(stat.isDirectory()){
+        //读取目录
+        fs.readdir(dir,(err,files) => {
+            //[]收集兄弟节点
+            let paths = files.map(file => path.join(dir,file))
+            function next(index){
+                //兄弟节点移动完毕后，文件删除完后最后目录，回溯到上层节点
+                if(index >= files.length)return fs.rmdir(dir,callback)
+                let current = paths[index]
+                //通过next移动兄弟节点
+                rmAsyncSeries(current,() => next(index + 1))
+            }
+            next(0)
+        })
+      }else {
+          stat.unlink(dir,callback)
+      }
+  })
+}
+
+rmAsyncSeries(path.join(__dirname,'a'),err => {})
+
+//异步并行删除目录(深度优先)
+function rmAsyncParallel(dir,callback) {
+   fs.stat(dir,(err,stat) => {
+       if(err)return callback(err)
+       if(stat.isDirectory()){
+           //考察当前节点是否有子节点
+          fs.readdir(dir,(err,files) => {
+              let paths = files.map(file => path.join(dir,file))
+              if(paths.length > 0){
+                let i = 0
+                function done(){
+                  //当子节点考察完毕时删除当前节点
+                  if(++i == paths.length){
+                    fs.rmdir(dir,callback)
+                  }
+                }
+                //有子节点考察下一节点
+                paths.forEach(p => rmAsyncParallel(p,done))
+              } else {
+                  //空目录直接删掉
+                  fs.rmdir(dir,callback)
+              }
+          })
+       }else {
+           //节点是文件直接删掉
+           fs.unlink(dir,callback)
+       }
+   })
+}
+
+rmAsyncParallel(path.join(__dirname,'a'),err => {
+ 
+})
+
+
+//批量同步删除(广度优先)
+function rmSync(dir){
+    let arr = [...dir]
+    let res = []
+    let index = 0
+    while(arr[index]){
+        let current = arr[index]
+        let stat = fs.statSync(current)
+        //判断传入的路径是不是目录
+        if(stat.isDirectory()){
+            //读目录
+            let dirs = fs.readdirSync(current)
+            //将原来目录复制一份，将目录的值转成路径
+            res.push([current,...dirs.map(d => path.join(current,d))])
+            index++
+        }
+    }
+    let list,item
+    while (null != (list = res.pop())) {
+       while(null != (item = list.pop())){
+            //判断文件类型
+            let stat = fs.statSync(item);
+            if (stat.isDirectory()) {
+                //删除空目录
+                fs.rmdirSync(item);
+            } else {
+                //删除文件
+                fs.unlinkSync(item);
+            }
+       }
+    }
+}
+rmSync([path.join(__dirname,'a'),path.join(__dirname,'b')])
+
+
+//异步删除目录(广度优先)
+function rmdirWideAsync(dir,callback){
+    let dirs=[dir];
+    let index=0;
+    function rmdir() {
+        //从叶子节点开始删除兄弟节点
+        let current = dirs.pop();
+        if (current) {
+            fs.stat(current,(err,stat) => {
+                if (stat.isDirectory()) {
+                    fs.rmdir(current,rmdir);
+                } else {
+                    fs.unlink(current,rmdir);
+                }
+            });
+        }
+    }
+    !function next() {
+        let current=dirs[index++];
+        if (current) {
+            //判断文件类型
+            fs.stat(current,(err,stat) => {
+                if (err) callback(err);
+                if (stat.isDirectory()) {
+                    //考察当前节点类型
+                    fs.readdir(current,(err,files) => {
+                        //转成path
+                        dirs=[...dirs,...files.map(item => path.join(current,item))];
+                        rmdir();
+                    });
+                } 
+            });
+        }  
+    }();
+}
+rmdirWideAsync(path.join(__dirname,'a'),() => {
+
+})
+```
+
+## 遍历算法
+
+```js
+//同步深度优先
+function deepSync(dir){
+    fs.readdirSync(dir).forEach(file=>{
+        let child = path.join(dir,file);
+        let stat = fs.statSync(child);
+        //考察子节点状态
+        if(stat.isDirectory()){
+            //是文件夹继续向下考察
+            deepSync(child);
+        }else{
+            console.log(child);
+        }
+    });
+}
+//异步深度优先
+function deep(dir,callback) {
+    fs.readdir(dir,(err,files)=>{
+        //用next统计子节点执行情况
+        !function next(index){
+            if(index == files.length){
+                //兄弟节点执行完毕后返回上一层
+                return callback();
+            }
+            let child = path.join(dir,files[index]);
+            fs.stat(child,(err,stat)=>{
+                if(stat.isDirectory()){
+                    //是文件夹继续向下考察
+                    deep(child,()=>next(index+1));
+                }else{
+                    //向兄弟节点移动
+                    console.log(child);
+                    next(index+1);
+                }
+            })
+        }(0)
+    })
+  }
+//同步广度优先
+function wideSync(dir){
+    let dirs = [dir];
+    while(dirs.length>0){
+        let current = dirs.shift();
+        console.log(current);
+        let stat = fs.statSync(current);
+        if(stat.isDirectory()){
+            //用栈收集相邻节点
+            let files = fs.readdirSync(current);
+            files.forEach(item=>{
+                dirs.push(path.join(current,item));
+            });
+        }
+    }
+  }
+  
+//异步广度优先
+function wide(dir, cb) {
+    fs.readdir(dir, (err, files) => {
+        //用next统计子节点执行次数
+        !function next(i){
+            if(i>= files.length) return cb();
+            let child = path.join(dir,files[i]);
+            fs.stat(child,(err,stat)=>{
+                if(stat.isDirectory()){
+                    //继续考察下一个节点
+                    wide(child, () => next(i+1));
+                } else {
+                    //执行相邻节点
+                    console.log(child);
+                    next(i+1);
+                }
+            })
+        }(0);
+    })
+}
+```
+
+
 ## path模块
 
 ```
