@@ -410,6 +410,124 @@ console.log(path.posix.sep);
 console.log(path.delimiter);//路径 分隔符 window ; linux :
 ```
 
+## API
+
+### 读取文件,写入,拷贝,追加文件
+```js
+//读取
+fs.readFile(path[, options], callback)
+fs.readFileSync(path[, options])
+
+options
+encoding
+flag flag 默认 = 'r'
+
+
+//写入
+fs.writeFile(file, data[, options], callback)
+fs.writeFileSync(file, data[, options])
+
+options
+encoding
+flag flag 默认 = 'w'
+mode 读写权限，默认为0666
+
+let fs = require('fs');
+fs.writeFile('./1.txt',Date.now()+'\n',{flag:'a'},function(){
+  console.log('ok');
+});
+
+//拷贝文件
+function copy(src,target){
+  fs.readFile(src,function(err,data){
+    fs.writeFile(target,data);
+  })
+}
+
+//追加文件
+fs.appendFile(file, data[, options], callback)
+fs.appendFile('./1.txt',Date.now()+'\n',function(){
+  console.log('ok');
+})
+
+//指定位置读取
+
+//1.打开文件
+fs.open(filename,flags,[mode],callback);
+
+FileDescriptor 是文件描述符
+FileDescriptor 可以被用来表示文件
+in -- 标准输入(键盘)的描述符
+out -- 标准输出(屏幕)的描述符
+err -- 标准错误输出(屏幕)的描述符
+
+fs.open('./1,txt','r',0600,function(err,fd){});
+
+//2.读取文件
+fs.read(fd, buffer, offset, length, position, callback((err, bytesRead, buffer)))
+const fs=require('fs');
+const path=require('path');
+fs.open(path.join(__dirname,'1.txt'),'r',0o666,function (err,fd) {
+    console.log(err);
+    let buf = Buffer.alloc(6);
+     fs.read(fd,buf,0,6,3,function(err, bytesRead, buffer){
+       console.log(bytesRead);//6
+       console.log(buffer===buf);//true
+       console.log(buf.toString());
+     })
+})
+
+//3.写入文件
+fs.write(fd, buffer[, offset[, length[, position]]], callback)
+
+const fs=require('fs');
+const path=require('path');
+fs.open(path.join(__dirname,'1.txt'),'w',0o666,function (err,fd) {
+    console.log(err);
+    let buf=Buffer.from('plus');
+     fs.write(fd,buf,3,6,0,function(err, bytesWritten, buffer){
+       console.log(bytesWritten);//6
+       console.log(buffer===buf);//true
+       console.log(buf.toString());
+     })
+})
+
+//4.关闭文件
+fs.close(fd,[callback])
+let buf = Buffer.from('plus');
+fs.open('./2.txt', 'w', function (err, fd) {
+  fs.write(fd, buf, 3, 6, 0, function (err, written, buffer) {
+    console.log(written);
+    fs.fsync(fd, function (err) {
+      fs.close(fd, function (err) {
+          console.log('写入完毕!')
+        }
+      );
+    });
+  })
+});
+
+//拷贝文件
+let BUFFER_SIZE=1;
+const path=require('path');
+const fs=require('fs');
+function copy(src,dest,callback) {
+    let buf=Buffer.alloc(BUFFER_SIZE);
+    fs.open(src,'r',(err,readFd)=>{
+        fs.open(dest,'w',(err,writeFd) => {
+            !function read() {
+                fs.read(readFd,buf,0,BUFFER_SIZE,null,(err,bytesRead) => {
+                    bytesRead&&fs.write(writeFd,buf,0,bytesRead,read);
+                });
+            }()
+        })
+    });
+}
+copy(path.join(__dirname,'1.txt'),path.join(__dirname,'2.txt'),()=>console.log('ok'));
+```
+
+
+
 ## flags
 
 ```
