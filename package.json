@@ -1,0 +1,17 @@
+{
+  "name": "node-use",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/PlusLius/node-use.git",
+  "author": "pluslius <408709581@qq.com>",
+  "license": "MIT",
+  "dependencies": {
+    "chai": "^4.2.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^6.0.2"
+  },
+  "scripts": {
+    "test": "mocha unitTest/test.js",
+    "cover": "istanbul cover _mocha --reporter unitTest/test.js"
+  }
+}
