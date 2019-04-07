@@ -11,8 +11,10 @@
     "chai": "^4.2.0",
     "enzyme-adapter-react-16": "^1.12.0",
     "eslint": "^5.16.0",
+    "handlebars": "^4.1.1",
     "istanbul": "^0.4.5",
     "mocha": "^6.0.2",
+    "nodemon": "^1.18.10",
     "pre-commit": "^1.2.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
@@ -23,12 +25,13 @@
     "cover": "istanbul cover _mocha --reporter test/unitTest/test.js",
     "jest": "jest test/uiTest/ui.test.js --coverage",
     "lint": "eslint .",
-    "fix": "eslint --fix ."
+    "fix": "eslint --fix .",
+    "dev": "nodemon staticServer"
   },
-  "pre-commit":[
-      "fix",
-      "lint"
-  ],
+  // "pre-commit": [
+  //   "fix",
+  //   "lint"
+  // ],
   "devDependencies": {
     "@babel/preset-env": "^7.4.3",
     "@babel/preset-react": "^7.0.0",
