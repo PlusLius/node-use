@@ -1,6 +1,6 @@
-console.log(1)
+// console.log(1)
 
-console.warn
+// console.warn
 
 window.name
 
@@ -8,4 +8,4 @@ window.name
 console.log(2)
 alert(123)
 /* eslint-enable */
-console.log(2)
+// console.log(2)
