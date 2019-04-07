@@ -10,17 +10,25 @@
     "benchmark": "^2.1.4",
     "chai": "^4.2.0",
     "enzyme-adapter-react-16": "^1.12.0",
+    "eslint": "^5.16.0",
     "istanbul": "^0.4.5",
     "mocha": "^6.0.2",
+    "pre-commit": "^1.2.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "sinon": "^7.3.1"
   },
   "scripts": {
-    "test": "mocha unitTest/test.js",
-    "cover": "istanbul cover _mocha --reporter unitTest/test.js",
-    "jest": "jest uiTest/ui.test.js --coverage"
+    "test": "mocha test/unitTest/test.js",
+    "cover": "istanbul cover _mocha --reporter test/unitTest/test.js",
+    "jest": "jest test/uiTest/ui.test.js --coverage",
+    "lint": "eslint .",
+    "fix": "eslint --fix ."
   },
+  "pre-commit":[
+      "fix",
+      "lint"
+  ],
   "devDependencies": {
     "@babel/preset-env": "^7.4.3",
     "@babel/preset-react": "^7.0.0",
