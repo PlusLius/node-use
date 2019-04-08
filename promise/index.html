@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>move</title>
+    <style>
+        .square{
+            width:40px;
+            height:40px;
+            border-radius: 50%;
+        }
+        .square1{
+            background-color: red;
+        }
+        .square2{
+            background-color: yellow;
+        }
+        .square3{
+            background-color: blue;
+        }
+    </style>
+</head>
+<body>
+<div class="square square1" style="margin-left: 0"></div>
+<div class="square square2" style="margin-left: 0"></div>
+<div class="square square3" style="margin-left: 0"></div>
+</body>
+<script>
+  const square1 = document.querySelector('.square1');
+  const square2 = document.querySelector('.square2');
+  const square3 = document.querySelector('.square3');
+
+  function move(element,target,resolve){
+    let current = 0
+    let timer = setInterval(() => {
+        element.style.transform = `translateX(${current++}px)`
+        if(current > target){
+            clearInterval(timer)
+            resolve()
+        }
+    },16)
+  }
+
+  function animate(element,target){
+      return new Promise((resolve,reject) => {
+          move(element,target,resolve)
+      })
+  }
+
+  animate(square1,100).then(() => {
+      return animate(square2,100)
+  }).then(() => {
+      return animate(square3,100)
+  })
+</script>
+</html>
